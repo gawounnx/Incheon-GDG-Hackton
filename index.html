@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <meta name="theme-color" content="#173f35" />
+  <title>웨이어블 Wayable — 갈 수 있는 길</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23216b59'/%3E%3Cpath d='M15 20h9l8 25 8-25h9L37 52H27z' fill='white'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="gallery.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <!-- 기본 탑바 -->
+    <header class="topbar" id="mainTopbar">
+      <div class="brand"><span class="brand-mark">W</span><div><b>웨이어블</b><small>WAYABLE</small></div></div>
+      <div class="top-actions">
+        <button class="icon-btn" id="infoBtn" aria-label="프로젝트 정보">i</button>
+      </div>
+    </header>
+
+    <!-- 실시간 네비게이션 안내 HUD (경로 선택 시 상단에 표시) -->
+    <div class="nav-hud" id="navHud">
+      <div class="nav-hud-top">
+        <div class="nav-turn-icon">↰</div>
+        <div class="nav-turn-text">
+          <strong id="navNextTurn">120m 앞 자유공원남로 방면</strong>
+          <span id="navConditionNote">🌱 계단 없는 완만한 우회로</span>
+        </div>
+      </div>
+      <div class="nav-hud-meta">
+        <div><b id="navRemainTime">8분</b> <small id="navRemainDist">(520m)</small></div>
+        <button class="nav-quit-btn" id="quitNavBtn">안내 종료</button>
+      </div>
+    </div>
+
+    <section class="map" id="mapSection" aria-label="청일조계지에서 자유공원까지의 접근성 지도">
+      <div class="map-grid"></div>
+      <svg class="routes" viewBox="0 0 400 520" preserveAspectRatio="none" aria-hidden="true">
+        <path class="route route-c active" data-route="C" d="M100 455 C115 375 190 350 180 265 C171 190 275 165 305 82" />
+        <path class="route route-b" data-route="B" d="M100 455 C205 420 260 390 262 302 C263 220 245 174 305 82" />
+        <path class="route route-a" data-route="A" d="M100 455 C62 400 55 315 95 255 C145 180 220 115 305 82" />
+      </svg>
+      <div class="place start" id="startMarker" style="left:21%;top:82%"><span></span><label>청일조계지</label></div>
+      <div class="place destination" id="destMarker" style="left:72%;top:10%"><span>★</span><label>자유공원</label></div>
+      
+      <!-- 내 위치 펄스 마커 (네비 모드 시 활성화) -->
+      <div class="user-live-loc" id="userLiveLoc" style="left:21%;top:82%">
+        <div class="user-live-dot"></div>
+      </div>
+
+      <!-- 기존 공식 실측 마커 -->
+      <button class="obstacle-marker pulse" id="stairsMarker" style="left:40%;top:47%" aria-label="계단 장애물 확인">!</button>
+      
+      <div class="street s1">차이나타운로</div><div class="street s2">자유공원남로</div>
+
+      <!-- 기본 초기 진입 카드 -->
+      <div class="hero-card" id="heroCard">
+        <span class="eyebrow">자유공원까지 350m · 약 5분</span>
+        <strong>하지만 이 길에는<br><em>계단이 있습니다.</em></strong>
+        <p>가장 가까운 길이 실제로 갈 수 있는 길은 아닙니다.</p>
+        <button class="primary" id="checkBtn">접근 가능한 길 확인 <span>→</span></button>
+      </div>
+
+      <!-- 네비게이션 진행 중 하단 미니 바 -->
+      <div class="nav-bottom-card" id="navBottomCard">
+        <div class="nav-b-info">
+          <span class="safe-badge">✓ 안전 경로 A 주행 중</span>
+          <b>계단 회피 및 완만한 경사로 이동 중입니다</b>
+        </div>
+        <div class="nav-progress-bar"><div class="nav-progress-fill"></div></div>
+      </div>
+
+      <div class="map-legend" id="mapLegend"><i></i> 현재 선택 경로 <span>현장 조사 기반 Demo</span></div>
+    </section>
+
+    <!-- 경로 비교 패널 -->
+    <section class="route-panel" id="routePanel" aria-live="polite">
+      <div class="panel-head"><div><span class="eyebrow">3개 경로 비교</span><h2>내가 갈 수 있는 길을 선택하세요</h2></div><button class="close-panel" id="closeRoutes" aria-label="경로 닫기">×</button></div>
+      <p class="philosophy">조건은 웨이어블이 보여드리고, 최종 선택은 사용자가 합니다.</p>
+      <div class="route-list" id="routeList"></div>
+    </section>
+
+    <div class="scrim" id="scrim"></div>
+
+    <!-- 현장 검증 장애물 시트 -->
+    <section class="sheet" id="obstacleSheet" role="dialog" aria-modal="true" aria-labelledby="obstacleTitle">
+      <div class="handle"></div>
+      <button class="sheet-close" data-close="sheet">×</button>
+      <div class="field-gallery" aria-label="현장에서 직접 촬영한 계단 구간 사진 2장">
+        <figure><img src="images/stairs-overview.jpg" alt="위에서 본 계단 구간" onerror="this.src='https://images.unsplash.com/photo-1590059390047-b5e08b17b2e3?auto=format&fit=crop&w=600&q=80'" /><figcaption>위에서 본 계단 구간</figcaption></figure>
+        <figure><img src="images/stairs-front.jpg" alt="아래에서 본 계단 구간" onerror="this.src='https://images.unsplash.com/photo-1508873696983-2df5293cb32f?auto=format&fit=crop&w=600&q=80'" /><figcaption>아래에서 본 계단 구간</figcaption></figure>
+      </div>
+      <span class="verified">● FIELD VERIFIED · 현장 직접 실측</span>
+      <h2 id="obstacleTitle">이동 주의 구간</h2>
+      <p>앞쪽에 계단이 있습니다. 휠체어와 보행이 불편한 사용자는 통과하기 어렵습니다.</p>
+      <div class="fact-row"><span>장애물</span><b>계단 (35개 단)</b><span>위험도</span><b class="danger">높음</b></div>
+      <div class="actions"><button class="secondary" data-close="sheet">그대로 보기</button><button class="primary" id="detourBtn">피해가기 →</button></div>
+    </section>
+
+    <!-- 프로젝트 정보 시트 -->
+    <section class="sheet info-sheet" id="infoSheet" role="dialog" aria-modal="true">
+      <div class="handle"></div><button class="sheet-close" data-close="info">×</button>
+      <span class="eyebrow">WHY WE BUILT IT</span><h2>지도상의 경로 ≠ 실제 이동 가능</h2>
+      <p>일반 지도에는 연결된 길로 표시되지만, 현장에서는 계단·급경사·좁은 보도 때문에 이동이 막힐 수 있었습니다.</p>
+      <div class="process"><div><b>01</b><span>현장 조사</span></div><i>→</i><div><b>02</b><span>데이터 구조화</span></div><i>→</i><div><b>03</b><span>AI 구현</span></div><i>→</i><div><b>04</b><span>사람의 검증</span></div></div>
+      <div class="insight"><b>신뢰할 수 있는 이동</b><p>조건을 투명하게 공개하여 보행 약자의 선택권을 보장합니다.</p></div>
+    </section>
+
+    <div class="loading" id="loading"><div class="spinner"></div><b id="loadingTitle">접근 가능한 다른 경로를<br>확인하고 있습니다…</b><small id="loadingSub">계단 · 경사 · 턱 · 보행 환경 분석</small></div>
+    <div class="toast" id="toast">경로가 변경되었습니다</div>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
+
